@@ -8,15 +8,15 @@ The script uses the "requests" library for HTTP interactions. This is the only d
 
 Some examples:
 
-# Get current external IP address:
+- Get current external IP address:
 ./ConkyWeather.py --externalip
 
-# Get the windspeed for today, for the current location
+- Get the windspeed for today, for the current location
 ConkyWeather.py --local --windspeed --day 0
 
-# Same thing, at my home location
+- Same thing, at my home location
 ConkyWeather.py --home --homewoe 727232 --windspeed --day 0
 
-# Get the temperature for tommorrow, at my home location
+- Get the temperature for tommorrow, at my home location
 ConkyWeather.py --home --homewoe 727232 --temperature --day 1
 
