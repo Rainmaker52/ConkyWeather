@@ -404,8 +404,10 @@ group.add_argument('--day', help='Return attributes for <day> (0=today)')
 
 progargs = parser.parse_args()
 
+from os.path import expanduser
+
 temppath = '/tmp/conky-weather'
-imagepath = '~/.conky/images'
+imagepath = '{}/.conky/images'.format(expanduser("~"))
 homewoeid = progargs.homewoe
 qwoeid = None
 #homewoe = '727232'  # Amsterdam (testing)
