@@ -1,4 +1,4 @@
-#!env python3
+#!/usr/bin/python3
 
 '''
 ConkyWeather will provide several useful Conky functions.
@@ -13,7 +13,10 @@ def getexternalip():
 
     dprint('Getting IP information')
     # Get external IP
-    r = requests.get('http://jsonip.com')
+    try:
+        r = requests.get('http://jsonip.com', timeout=10)
+    except requests.exceptions.Timeout:
+        raise NoInternet
     ip = json.loads(r.text)['ip']
     return ip
 
@@ -29,8 +32,10 @@ def getlocation(ip):
         if progargs.debug:
             dprint('Filling information with bogus information')
             r = '{"ip":"77.242.120.51","country_code":"NL","country_name":"Netherlands","region_code":"ZH","region_name":"South Holland","city":"Boskoop","zip_code":"2771","time_zone":"Europe/Amsterdam","latitude":52.075,"longitude":4.656,"metro_code":0}'
+            return r
         else:
             r = '{}'
+            raise NoInternet
 
     return json.loads(r)
 
@@ -42,7 +47,11 @@ def doyahooquery(query, url='https://query.yahooapis.com/v1/public/yql?format=js
     u = '{}{}'.format(url, quote(query))
     dprint('Getting {}'.format(u))
 
-    r = requests.get(u)
+    try:
+        r = requests.get(u, timeout=10)
+    except requests.exceptions.Timeout:
+        raise NoInternet
+
     dprint('Returning {}'.format(r.text))
     return json.loads(r.text)
 
@@ -332,7 +341,6 @@ class WeatherInfo(JSONObject):
     def __init__(self, cachecontent=None):
         # Actual weather info
         self.woeid = qwoeid
-        self.condition = 3200
 
         super(WeatherInfo, self).__init__(cachecontent)
 
@@ -342,7 +350,7 @@ class WeatherInfo(JSONObject):
 
         try:
             # Store 3 variables for each day
-            for i in range(4):
+            for i in range(5):
                 low = r['query']['results']['channel']['item']['forecast'][i]['low']
                 high = r['query']['results']['channel']['item']['forecast'][i]['high']
                 self.__dict__['temperature{}'.format(i)] = '{}-{}°C'.format(low, high)
@@ -385,6 +393,7 @@ group.add_argument('--home', action='store_true', help='Display weather info for
 group.add_argument('--local', action='store_true', help='Display weather info for local location, based on IP')
 
 group = parser.add_argument_group('Information per location', 'Specifiy the attribute which to return. --home or --local should be specified')
+group.add_argument('--dow', action='store_true', help='get the day of week for a given --day object. This DOES need --local or --home')
 group.add_argument('--sunset', action='store_true', help='Return sunset')
 group.add_argument('--sunrise', action='store_true', help='Return sunrise')
 group.add_argument('--windspeed', action='store_true', help='Return wind direction')
@@ -452,22 +461,24 @@ try:
 
         try:
             # Update the images
-            for i in range(4):
+            for i in range(5):
                 link_image(i, w.__getattribute__('condition{}'.format(i)), "0")
 
             # Return requested attribute
             if progargs.temperature:
                 print(w.__getattribute__('temperature{}'.format(progargs.day)))
             elif progargs.windspeed:
-                print(w.__getattribute__('windspeed'.format(progargs.day)))
+                print(w.__getattribute__('windspeed'))
             elif progargs.winddirection:
-                print(w.__getattribute__('winddirection'.format(progargs.day)))
+                print(w.__getattribute__('winddirection'))
             elif progargs.sunset:
-                r = w.__getattribute__('sunset'.format(progargs.day))
+                r = w.__getattribute__('sunset')
                 print(to24hourtime(r))
             elif progargs.sunrise:
-                r = w.__getattribute__('sunrise'.format(progargs.day))
+                r = w.__getattribute__('sunrise')
                 print(to24hourtime(r))
+            elif progargs.dow:
+                print(w.__getattribute__('day{}'.format(progargs.day)))
 
         except AttributeError as e:
             dprint('Could not get attribute: {}'.format(e))
@@ -486,22 +497,24 @@ try:
 
         try:
             # Update the images
-            for i in range(4):
+            for i in range(5):
                 link_image(i, w.__getattribute__('condition{}'.format(i)), "1")
 
             # Return requested attribute
             if progargs.temperature:
                 print(w.__getattribute__('temperature{}'.format(progargs.day)))
             elif progargs.windspeed:
-                print(w.__getattribute__('windspeed'.format(progargs.day)))
+                print(w.__getattribute__('windspeed'))
             elif progargs.winddirection:
-                print(w.__getattribute__('winddirection'.format(progargs.day)))
+                print(w.__getattribute__('winddirection'))
             elif progargs.sunset:
-                r = w.__getattribute__('sunset'.format(progargs.day))
+                r = w.__getattribute__('sunset')
                 print(to24hourtime(r))
             elif progargs.sunrise:
-                r = w.__getattribute__('sunrise'.format(progargs.day))
+                r = w.__getattribute__('sunrise')
                 print(to24hourtime(r))
+            elif progargs.dow:
+                print(w.__getattribute__('day{}'.format(progargs.day)))
 
         except AttributeError as e:
             dprint('Could not get attribute: {}'.format(e))
@@ -548,7 +561,7 @@ except NoInternet:
 
     # We have no (valid) cache, and we could not build it. This is a fatal error.
     # Replace all icons by "unknown" (3200)
-    for i in range(4):
+    for i in range(5):
         link_image(i, 3200, 0)
         link_image(i, 3200, 1)
 
